@@ -141,5 +141,23 @@ class Paciente:
 
 #--- Clase para gestionar los pacientes de acuerdo a la estructura de dato ----
 class GestorPacientes:
-    
+    def __init__(self):
+        self.lista_pacientes = Lista()
+        self.pila_operaciones = Pila()
+        self.cola_espera = Cola() 
 
+    def agregarPaciente(self, paciente):
+        self.lista_pacientes.insertar(paciente.to_diccio())
+        self.pila_operaciones.push(('agregar', paciente.numero_id))
+        self.cola_espera.enqueue(paciente.numero_id)
+
+    def obtenerPaciente(self):
+        self.lista_pacientes.obtener_todos()
+
+    def buscarPaciente(self, numero_id):
+        self.lista_pacientes.buscar(numero_id)
+
+    def deshacerUltimaOperacion(self):
+        if not self.pila_operaciones.is_empty():
+            return self.pila_operaciones.pop()
+        return None
