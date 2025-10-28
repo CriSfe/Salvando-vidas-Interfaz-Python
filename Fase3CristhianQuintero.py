@@ -161,3 +161,20 @@ class GestorPacientes:
         if not self.pila_operaciones.is_empty():
             return self.pila_operaciones.pop()
         return None
+    
+
+#-------------Clase para las ventanas de la interfaz----------------------#
+
+class VentanaLogin(tk.Tk):
+    #-----Inicio de la ventana de Login----#
+    def __init__(self):
+        super().__init__()
+        self.title("Login - EPS Salvando Vidas")
+        self.geometry("500x300")
+        self.configure(bg="#f0f0f07f")
+        self.resizable(False, False)
+
+        self.crearinterfaz()
+    
+    def crear_interfaz(self):
+        
