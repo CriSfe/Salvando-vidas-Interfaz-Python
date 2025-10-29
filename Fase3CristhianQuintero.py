@@ -76,7 +76,7 @@ class Lista:
     def buscar(self, id_paciente):
         actual = self.cabeza
         while actual:
-            if actual.dato.ge('id_numero') == id_paciente:
+            if actual.dato.get('id_numero') == id_paciente:
                 return actual.dato
             actual = actual.siguiente
         return None
@@ -177,4 +177,103 @@ class VentanaLogin(tk.Tk):
         self.crearinterfaz()
     
     def crear_interfaz(self):
+        #frame principal
+        frame_principal = ttk.Frame(self, padding="20")
+        frame_principal.pack(expand=True)
+
+        #Título
+        titulo = ttk.Label(frame_principal, text="Ingresar", font=("Arial", 16, "bold"))
+        titulo.pack(pady=20)
+
+        #Boton de Acerca de
+        acerca_de = ttk.Button(frame_principal, text="Acerca de", bg="blue", fg="black", activebackground="blue", activeforeground="white", padx=10, pady=5)
+        acerca_de.pack(pady=20)
+
+        #Contraseña
+        ttk.Label(frame_principal, text="Contraseña:").pack(anchor='w', pady=(20,0))
+        self.entrada_contrasena = ttk.Entry(frame_principal, width=30, show="*")
+        self.entrada_contrasena.pack(pady=5)
+
+        #Botones
+        frame_botones = ttk.Frame(frame_principal)        
+        frame_botones.pack(pady=30)
+
+        ttk.Button(frame_botones, text="Ingresar", command=self.validar_login).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(frame_botones, text="Salir", command=self.quit).pack(side = tk.LEFT, padx=5)
+
+    #Validar las credenciales
+    def validar_login(self):
+        contrasena = self.entrada_contrasena.get()
+
+        if contrasena == "unad":
+            gestor = GestorPacientes()
+            ventana_control = VentanaControlUsuario(self, gestor)
+            self.withdraw() 
+        else:
+            messagebox.showerror("Error", "Contraseña incorrecta")
+
+class VentanaControlUsuario(tk.Toplevel):
+    def __init__(self, parent, gestor):
+        super().__init__(parent)
+        self.parent = parent
+        self.gestor = gestor
+        self.title("Control de Usuarios")
+        self.geometry("1000X600")
+        self.configure(bg='#f0f0f0')
+
+        self.crear_interfaz()
+
+    def crear_interfaz(self):
+        # Frame superior - Formulario
+        frame_formulario = ttk.LabelFrame(self, text="Formulario de Ingreso de Paciente", 
+                                         padding="10")
+        frame_formulario.pack(fill=tk.X, padx=10, pady=10)
         
+        self.crear_formulario(frame_formulario)
+        
+        # Frame inferior - Tabla
+        frame_tabla = ttk.LabelFrame(self, text="Registro de Pacientes", 
+                                    padding="10")
+        frame_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        self.crear_tabla(frame_tabla)
+        
+        # Botones de acción
+        frame_botones = ttk.Frame(self)
+        frame_botones.pack(pady=10)
+        
+        ttk.Button(frame_botones, text="Actualizar Tabla", 
+                  command=self.actualizar_tabla).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_botones, text="Deshacer", 
+                  command=self.deshacer_operacion).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_botones, text="Salir", 
+                  command=self.salir_aplicacion).pack(side=tk.LEFT, padx=5)
+    
+    def crear_formulario(self, parent):
+
+    
+
+    def crear_tabla(self, parent):
+
+
+    def guardar_paciente(self):
+
+    
+    def limpiar_formulario(self):
+
+
+    def actualizar_tabla(self):
+
+    
+    def deshacer_operacion(self):
+
+    
+
+    def salir_operacion(self):
+
+
+#-----------------punto de incio-----------------------#
+if __name__ == "__main__":
+    app = VentanaLogin()
+    app.mainloop()
