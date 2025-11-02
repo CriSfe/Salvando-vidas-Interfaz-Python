@@ -125,12 +125,12 @@ class Paciente:
         
         for item in tabla_copago:
             if item["Estrato"] == self.estrato:
-                return item["Valor del Copago"]
+                return item["Valor Del Copago"]
         return 0
 
 #-- Convertir los datos del paciente en diccionario
 
-    def to_diccio(self):
+    def to_dict(self):
         return {
             'tipo_id': self.tipo_id,
             'id_numero': self.numero_id,
@@ -146,16 +146,37 @@ class Paciente:
 class GestorPacientes:
     def __init__(self):
         self.lista_pacientes = Lista()
-        self.pila_operaciones = Pila()
-        self.cola_espera = Cola() 
+        self.pila_pacientes = Pila()
+        self.cola_pacientes = Cola()
+        self.pila_operaciones = Pila()  #Para deshacer las operaciones
+        self.estructura_actual = "Lista Enlazada" #Estructura por defecto
 
-    def agregarPaciente(self, paciente):
-        self.lista_pacientes.insertar(paciente.to_diccio())
+    def agregarPaciente(self, paciente, estructura):
+
+        paciente_dict = paciente.to_dict()
+
+        if estructura == "Lista Enlazada":
+            self.lista_pacientes.insertar(paciente_dict)
+        elif estructura == "Pila":
+            self.pila_pacientes.push(paciente_dict)
+        elif estructura == "Cola":
+            self.cola_pacientes.enqueue(paciente_dict)
+        
+        self.estructura_actual = estructura
         self.pila_operaciones.push(('agregar', paciente.numero_id))
-        self.cola_espera.enqueue(paciente.numero_id)
 
-    def obtenerPaciente(self):
-        self.lista_pacientes.obtener_todos()
+    def obtenerPacientes(self, estructura=None):
+        #-------Obtiene todos los pacientes según la estructura
+        if estructura is None:
+            estructura = self.estructura_actual
+        
+        if estructura == "Lista Enlazada":
+            return self.lista_pacientes.obtener_todos()
+        elif estructura == "Pila":
+            return list(reversed(self.pila_pacientes.items))
+        elif estructura == "Cola":
+            return list(self.cola_pacientes.items)
+        return []
 
     def buscarPaciente(self, numero_id):
         self.lista_pacientes.buscar(numero_id)
@@ -166,7 +187,64 @@ class GestorPacientes:
         return None
     
 
-#-------------Clase para las ventanas de la interfaz----------------------#
+#-------------Clases para las ventanas de la interfaz----------------------#
+
+#-------------Ventana PopUp Acerca de------------------#
+
+class VentanaAcercaDe(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Acerca de")
+        self.geometry("400x300")
+        self.configure(bg="#e8f4f8")
+        self.resizable(False, False)
+
+        #Centrar la ventana
+        self.transient(parent)
+        self.grab_set()
+
+        self.crear_interfaz()
+
+    def crear_interfaz(self):
+        #Crear el frame principal
+        frame_principal = ttk.Frame(self, padding="30")
+        frame_principal.pack(expand=True, fill=tk.BOTH)
+
+        #Titulo de la aplicación
+        titulo = tk.Label(frame_principal, text="EPS SALVANDO VIDAS", font=("Arial", 18, "bold"), bg="#e8f4f8", fg="#2c5aa0")
+        titulo.pack(pady=(0,20))
+
+        #Separador
+        separador = ttk.Separator(frame_principal, orient='horizontal')
+        separador.pack(fill=tk.X, pady=10)
+
+        #Informacion de creador
+        tk.Label(frame_principal,
+                text="Estudiante:",
+                font=("Arial", 10, "bold"),
+                bg='#e8f4f8',
+                fg='#555555').pack(pady=(10, 5))
+        
+        tk.Label(frame_principal,
+                text="Cristhian Fernando Quintero Holguín",
+                font=("Arial", 12),
+                bg='#e8f4f8',
+                fg='#2c5aa0').pack()
+        
+        tk.Label(frame_principal,
+                text="Grupo:",
+                font=("Arial", 12),
+                bg='#e8f4f8',
+                fg='#2c5aa0').pack()
+
+        tk.Label(frame_principal,
+                text="114",
+                font=("Arial", 12),
+                bg='#e8f4f8',
+                fg='#2c5aa0').pack()
+        
+        #Salir de la ventana
+        ttk.Button(frame_principal, text="Cerrar", command=self.destroy).pack(pady=(10, 0))
 
 
 #-----Inicio de la ventana de Login----#
@@ -175,8 +253,8 @@ class VentanaLogin(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Login - EPS Salvando Vidas")
-        self.geometry("500x300")
-        self.configure(bg="#f0f0f07f")
+        self.geometry("500x350")
+        self.configure(bg="#f0f0f0")
         self.resizable(False, False)
 
         self.crear_interfaz()
@@ -187,11 +265,11 @@ class VentanaLogin(tk.Tk):
         frame_principal.pack(expand=True)
 
         #Título
-        titulo = ttk.Label(frame_principal, text="Ingresar", font=("Arial", 16, "bold"))
+        titulo = ttk.Label(frame_principal, text="Ingresar - EPS Salvando Vidas", font=("Arial", 16, "bold"))
         titulo.pack(pady=20)
 
         #Boton de Acerca de (falta la ventana popup)
-        acerca_de = ttk.Button(frame_principal, text="Acerca de", bg="blue", fg="black", activebackground="blue", activeforeground="white", padx=10, pady=5)
+        acerca_de = ttk.Button(frame_principal, command=self.abrir_acerca_de, text="Acerca de")
         acerca_de.pack(pady=20)
 
         #Contraseña
@@ -207,6 +285,11 @@ class VentanaLogin(tk.Tk):
 
         ttk.Button(frame_botones, text="Salir", command=self.quit).pack(side = tk.LEFT, padx=5)
 
+    #metodo para abrir la clase VentanaAcercaDe
+    def abrir_acerca_de(self):
+        VentanaAcercaDe(self)
+        
+
     #Validar las credenciales
     def validar_login(self):
         contrasena = self.entrada_contrasena.get()
@@ -217,6 +300,8 @@ class VentanaLogin(tk.Tk):
             self.withdraw() 
         else:
             messagebox.showerror("Error", "Contraseña incorrecta")
+            self.entrada_contrasena.delete(0, tk.END)
+            self.entrada_contrasena.focus()
 
 
 #------------------Clase de la ventana principal----------------#
@@ -225,8 +310,9 @@ class VentanaControlUsuario(tk.Toplevel):
         super().__init__(parent)
         self.parent = parent
         self.gestor = gestor
+        self.estructura_seleccionada = "Lista Enlazada"
         self.title("Control de Usuarios")
-        self.geometry("1000X600")
+        self.geometry("1200x700")
         self.configure(bg='#f0f0f0')
 
         self.crear_interfaz()
@@ -240,23 +326,35 @@ class VentanaControlUsuario(tk.Toplevel):
         self.crear_formulario(frame_formulario)
 
         
-        # Frame inferior - Tabla
-        frame_tabla = ttk.LabelFrame(self, text="Registro de Pacientes", 
-                                    padding="10")
+        # Frame de control de las estructuras y la visualización
+        frame_control = ttk.Frame(self)
+        frame_control.pack(fill=tk.X, padx=10, pady=5)
+
+        ttk.Label(frame_control, text="Ver estructura:", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=5)
+
+        self.combo_ver_estructura = ttk.Combobox(frame_control, values=["Lista Enlazada", "Pila", "Cola"], state='readonly', width=18)
+        self.combo_ver_estructura.bind('<<ComboboxSelected>>', self.cambiar_visualizacion)
+        self.combo_ver_estructura.pack(side=tk.LEFT, padx=5)
+        self.combo_ver_estructura.set(self.estructura_seleccionada)
+
+        ttk.Label(frame_control, text="Estructura activa:", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=(30, 5))
+
+        self.label_estructura = ttk.Label(frame_control, text=self.estructura_seleccionada, foreground= "blue", font=("Arial", 10, "bold"))
+        self.label_estructura.pack(side=tk.LEFT, padx= 5)
+        
+        #Frame inferior - Tabla
+        frame_tabla = ttk.LabelFrame(self, text="Registro de Paciente", padding="10")
         frame_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
+
         self.crear_tabla(frame_tabla)
-        
+
         # Botones de acción
         frame_botones = ttk.Frame(self)
         frame_botones.pack(pady=10)
         
-        ttk.Button(frame_botones, text="Actualizar Tabla", 
-                  command=self.actualizar_tabla).pack(side=tk.LEFT, padx=5)
-        ttk.Button(frame_botones, text="Deshacer", 
-                  command=self.deshacer_operacion).pack(side=tk.LEFT, padx=5)
-        ttk.Button(frame_botones, text="Salir", 
-                  command=self.salir_operacion).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_botones, text="Actualizar Tabla", command=self.actualizar_tabla).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_botones, text="Deshacer", command=self.deshacer_operacion).pack(side=tk.LEFT, padx=5)
+        ttk.Button(frame_botones, text="Salir", command=self.salir_aplicacion).pack(side=tk.LEFT, padx=5)
     
     def crear_formulario(self, parent):
         #Escoger la estructura
@@ -267,7 +365,7 @@ class VentanaControlUsuario(tk.Toplevel):
         
         #Escoger el tipo de documento
         ttk.Label(parent, text="Tipo de Documento:").grid(row=1, column=0, sticky='W', pady=5)
-        self.combo_tipo_id = ttk.Combobox(parent, values=["CC", "TI", "Pasaporte"], state='reandoly', width=15)
+        self.combo_tipo_id = ttk.Combobox(parent, values=["CC", "TI", "Pasaporte"], state='readonly', width=15)
         self.combo_tipo_id.grid(row=1, column=1, padx=5, pady=5)
 
         #Insertar el documento
@@ -288,20 +386,24 @@ class VentanaControlUsuario(tk.Toplevel):
         #Estrato
         ttk.Label(parent, text="Estrato:").grid(row=5, column=0, sticky='w', pady=5)
         self.combo_estrato = ttk.Combobox(parent, values=["1", "2", "3", "4", "5", "6"], state='readonly', width=15)
-        self.combo_estrato.grid(row=5, column=1, padx=5, pady=5)
+        self.combo_estrato.grid(row=5, column=1, padx=0, pady=5)
 
-
-        #Atención
+            #Evento para actualizar el copago cuando cambie el estrato
         self.combo_estrato.bind('<<ComboboxSelected>>', self.actualizar_copago_preview)
-        
+
+        #Atencion
         ttk.Label(parent, text="Tipo de Atención:").grid(row=6, column=0, sticky='w', padx=(20,0))
         self.combo_atencion = ttk.Combobox(parent, values=["Medicina General", "Laboratorio"], state='readonly', width=20)
-        self.combo_atencion.grid(row=6, column=1, padx=5, pady=5)
-
+        self.combo_atencion.grid(row=6, column=1, padx=0, pady=5)
+            #Evento para actualizar el copago cuando cambie el tipo de atención
         self.combo_atencion.bind('<<ComboboxSelected>>', self.actualizar_copago_preview)
 
         #Copago (row=7)
-
+        ttk.Label(parent, text="Copago:").grid(row=7, column=0, sticky='W', pady=5)
+        self.entrada_copago = ttk.Entry(parent, width=15)
+        self.entrada_copago.insert(0, "$0")
+        self.entrada_copago.config(state='readonly')
+        self.entrada_copago.grid(row=7, column=1, padx=0, pady=5)
 
 
         #Fecha (row=8)
@@ -309,13 +411,13 @@ class VentanaControlUsuario(tk.Toplevel):
         self.entrada_fecha = ttk.Entry(parent, width=20)
         self.entrada_fecha.insert(0, datetime.now().strftime("%d-%m-%Y"))
         self.entrada_fecha.config(state='readonly')
-        self.entrada_fecha.grid(row=8, column=1, padx=5, pady=5)
+        self.entrada_fecha.grid(row=8, column=1, padx=0, pady=5)
 
 
         #Botones (Registrar / Limpiar) (row=9)
-        ttk.Button(parent, text="Registrar Paciente", command=self.registrar_paciente).grid(row=4, column=0, columnspan=6, pady=15)
+        ttk.Button(parent, text="Registrar Paciente", command=self.registrar_paciente).grid(row=9, column=0, columnspan=2, pady=15)
 
-        ttk.Button(parent, text="Limpiar Registro", command=self.limpiar_formulario).grid(row=4, column=0, columnspan=6, pady=15)
+        ttk.Button(parent, text="Limpiar Registro", command=self.limpiar_formulario).grid(row=9, column=2, columnspan=2, pady=15)
 
 
 
@@ -330,7 +432,8 @@ class VentanaControlUsuario(tk.Toplevel):
         scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
         
         # Treeview
-        columnas = ("Estructura", "ID", "Nombre", "Edad", "Estrato", "Atención", "Copago", "Fecha Ingreso")
+
+        columnas = ("Tipo ID", "ID", "Nombre", "Edad", "Estrato", "Tipo atención", "Fecha Ingreso")
         self.tabla = ttk.Treeview(frame_scroll, columns=columnas, height=12, yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
         
         self.tabla.column("#0", width=0, stretch=tk.NO)
@@ -346,7 +449,8 @@ class VentanaControlUsuario(tk.Toplevel):
         self.tabla.pack(fill=tk.BOTH, expand=True)
 
     def actualizar_copago_preview(self, event=None):
-                
+
+                    estrato = self.combo_estrato.get()
                     tipo_atencion = self.combo_atencion.get()
                     
                     if estrato and tipo_atencion:
@@ -356,7 +460,7 @@ class VentanaControlUsuario(tk.Toplevel):
                             numero_id="",
                             nombre="",
                             edad=0,
-                            estrato=estrato,
+                            estrato= estrato,
                             tipo_atencion=tipo_atencion,
                             fecha_ingreso=""
                         )
@@ -386,7 +490,7 @@ class VentanaControlUsuario(tk.Toplevel):
                 fecha_ingreso=datetime.now().strftime("%d-%m-%Y")
             )
             
-            self.gestor.agregar_paciente(paciente, estructura_seleccionada)
+            self.gestor.agregarPaciente(paciente, estructura_seleccionada)
             self.estructura_seleccionada = estructura_seleccionada
             self.label_estructura.config(text=estructura_seleccionada)
             
@@ -406,13 +510,17 @@ class VentanaControlUsuario(tk.Toplevel):
         self.entrada_edad.delete(0, tk.END)
         self.combo_estrato.set('')
         self.combo_atencion.set('')
+        self.entrada_copago.config(state='normal')
+        self.entrada_copago.delete(0, tk.END)
+        self.entrada_copago.insert(0, "$0")
+        self.entrada_copago.config(state='readonly')
 
     def actualizar_tabla(self):
         for item in self.tabla.get_children():
             self.tabla.delete(item)
         
         estructura_visualizar = self.combo_ver_estructura.get()
-        pacientes = self.gestor.obtener_pacientes(estructura_visualizar)
+        pacientes = self.gestor.obtenerPacientes(estructura_visualizar)
         
         for paciente in pacientes:
             valores = (
@@ -439,7 +547,7 @@ class VentanaControlUsuario(tk.Toplevel):
             messagebox.showwarning("Advertencia", "No hay operaciones para deshacer")
     
     
-    def salir_operacion(self):
+    def salir_aplicacion(self):
         if messagebox.askokcancel("Salir", "¿Deseas salir de la aplicación?"):
             self.parent.destroy()
 
