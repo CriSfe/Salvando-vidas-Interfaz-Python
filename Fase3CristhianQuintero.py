@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 from collections import deque
-import json
+from tkcalendar import DateEntry
+
 
 
 #----- Clase para las estructuras de datos -----
@@ -312,7 +313,7 @@ class VentanaControlUsuario(tk.Toplevel):
         self.gestor = gestor
         self.estructura_seleccionada = "Lista Enlazada"
         self.title("Control de Usuarios")
-        self.geometry("1200x700")
+        self.geometry("1200x800")
         self.configure(bg='#f0f0f0')
 
         self.crear_interfaz()
@@ -342,12 +343,6 @@ class VentanaControlUsuario(tk.Toplevel):
         self.label_estructura = ttk.Label(frame_control, text=self.estructura_seleccionada, foreground= "blue", font=("Arial", 10, "bold"))
         self.label_estructura.pack(side=tk.LEFT, padx= 5)
         
-        #Frame inferior - Tabla
-        frame_tabla = ttk.LabelFrame(self, text="Registro de Paciente", padding="10")
-        frame_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        self.crear_tabla(frame_tabla)
-
         # Botones de acción
         frame_botones = ttk.Frame(self)
         frame_botones.pack(pady=10)
@@ -356,6 +351,14 @@ class VentanaControlUsuario(tk.Toplevel):
         ttk.Button(frame_botones, text="Deshacer", command=self.deshacer_operacion).pack(side=tk.LEFT, padx=5)
         ttk.Button(frame_botones, text="Salir", command=self.salir_aplicacion).pack(side=tk.LEFT, padx=5)
     
+
+        #Frame inferior - Tabla
+        frame_tabla = ttk.LabelFrame(self, text="Registro de Paciente", padding="10")
+        frame_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        self.crear_tabla(frame_tabla)
+
+        
     def crear_formulario(self, parent):
         #Escoger la estructura
         ttk.Label(parent, text="Estructura:").grid(row=0, column=0, sticky='w', padx=(20,0))
@@ -408,16 +411,20 @@ class VentanaControlUsuario(tk.Toplevel):
 
         #Fecha (row=8)
         ttk.Label(parent, text="Fecha Ingreso:").grid(row=8, column=0, sticky='w', padx=(20,0))
-        self.entrada_fecha = ttk.Entry(parent, width=20)
-        self.entrada_fecha.insert(0, datetime.now().strftime("%d-%m-%Y"))
-        self.entrada_fecha.config(state='readonly')
-        self.entrada_fecha.grid(row=8, column=1, padx=0, pady=5)
+        
+        self.entrada_fecha = DateEntry(parent, width= 18, background='darkblue', foreground='white', borderwidth=2, date_pattern='dd-mm-yyyy', locale='es_ES')
+        self.entrada_fecha.grid(row=8, column=1, padx=5, pady=5, sticky='W')
+
+        
 
 
         #Botones (Registrar / Limpiar) (row=9)
-        ttk.Button(parent, text="Registrar Paciente", command=self.registrar_paciente).grid(row=9, column=0, columnspan=2, pady=15)
+        frame_botones_form = ttk.Frame(parent)
+        frame_botones_form.grid(row=9, column=0, columnspan=4, pady=15)
 
-        ttk.Button(parent, text="Limpiar Registro", command=self.limpiar_formulario).grid(row=9, column=2, columnspan=2, pady=15)
+        ttk.Button(frame_botones_form, text="Registrar Paciente", command=self.registrar_paciente).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(frame_botones_form, text="Limpiar Registro", command=self.limpiar_formulario).pack(side=tk.LEFT, padx=5)
 
 
 
@@ -433,7 +440,7 @@ class VentanaControlUsuario(tk.Toplevel):
         
         # Treeview
 
-        columnas = ("Tipo ID", "ID", "Nombre", "Edad", "Estrato", "Tipo atención", "Fecha Ingreso")
+        columnas = ("Tipo ID", "ID", "Nombre", "Edad", "Estrato", "Tipo atención", "Copago", "Fecha Ingreso")
         self.tabla = ttk.Treeview(frame_scroll, columns=columnas, height=12, yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
         
         self.tabla.column("#0", width=0, stretch=tk.NO)
@@ -479,6 +486,13 @@ class VentanaControlUsuario(tk.Toplevel):
                 return
             
             estructura_seleccionada = self.combo_estructura.get()
+
+            #Obtener la fecha del DataEntry
+            try:
+                fecha_seleccionada = self.entrada_fecha.get_date().strftime("%d-%m-%Y")
+            except Exception as e:
+                messagebox.showerror("Error", "Fecha de ingreso inválida. Por favor seleccione una fecha válida.")
+                return
             
             paciente = Paciente(
                 tipo_id=self.combo_tipo_id.get(),
@@ -487,7 +501,7 @@ class VentanaControlUsuario(tk.Toplevel):
                 edad=int(self.entrada_edad.get()),
                 estrato=self.combo_estrato.get(),
                 tipo_atencion=self.combo_atencion.get(),
-                fecha_ingreso=datetime.now().strftime("%d-%m-%Y")
+                fecha_ingreso= fecha_seleccionada
             )
             
             self.gestor.agregarPaciente(paciente, estructura_seleccionada)
@@ -514,6 +528,7 @@ class VentanaControlUsuario(tk.Toplevel):
         self.entrada_copago.delete(0, tk.END)
         self.entrada_copago.insert(0, "$0")
         self.entrada_copago.config(state='readonly')
+        self.entrada_fecha.set_date(datetime.now())
 
     def actualizar_tabla(self):
         for item in self.tabla.get_children():
@@ -539,7 +554,7 @@ class VentanaControlUsuario(tk.Toplevel):
         self.actualizar_tabla()
     
     def deshacer_operacion(self):
-        operacion = self.gestor.deshacer_ultima_operacion()
+        operacion = self.gestor.deshacerUltimaOperacion()
         if operacion:
             messagebox.showinfo("Deshacer", f"Operación deshecha: {operacion}")
             self.actualizar_tabla()
