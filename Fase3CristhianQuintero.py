@@ -180,7 +180,7 @@ class GestorPacientes:
         return []
 
     def buscarPaciente(self, numero_id):
-        self.lista_pacientes.buscar(numero_id)
+        return self.lista_pacientes.buscar(numero_id)
 
     def deshacerUltimaOperacion(self):
         if not self.pila_operaciones.is_empty():
@@ -327,6 +327,14 @@ class VentanaControlUsuario(tk.Toplevel):
         self.crear_formulario(frame_formulario)
 
         
+        #Frame de Búsqueda
+        frame_busqueda = ttk.LabelFrame(self, text="Buscar Paciente (Lista Enlazada)", padding="10")
+        frame_busqueda.pack(fill=tk.X, padx=10, pady=5)
+
+        self.crear_formulario_busqueda(frame_busqueda)
+
+
+
         # Frame de control de las estructuras y la visualización
         frame_control = ttk.Frame(self)
         frame_control.pack(fill=tk.X, padx=10, pady=5)
@@ -345,7 +353,7 @@ class VentanaControlUsuario(tk.Toplevel):
         
         # Botones de acción
         frame_botones = ttk.Frame(self)
-        frame_botones.pack(pady=10)
+        frame_botones.pack(fill=tk.X, padx=10, pady=5)
         
         ttk.Button(frame_botones, text="Actualizar Tabla", command=self.actualizar_tabla).pack(side=tk.LEFT, padx=5)
         ttk.Button(frame_botones, text="Deshacer", command=self.deshacer_operacion).pack(side=tk.LEFT, padx=5)
@@ -426,6 +434,26 @@ class VentanaControlUsuario(tk.Toplevel):
 
         ttk.Button(frame_botones_form, text="Limpiar Registro", command=self.limpiar_formulario).pack(side=tk.LEFT, padx=5)
 
+    #Método para el formulario de búsqeuda de pacientes
+    def crear_formulario_busqueda(self, parent):
+        frame_contenido = ttk.Frame(parent)
+        frame_contenido.pack(fill=tk.X, padx=5, pady=5)
+
+        #label del formulario de búsqueda de pacientes
+        ttk.Label(frame_contenido, text="ID del Paciente:", font=("Arial", 10)).pack(side=tk.LEFT, padx=(0,10))
+
+        #Obtener y guardar la ID
+        self.entrada_buscar_id = ttk.Entry(frame_contenido, width=25)
+        self.entrada_buscar_id.pack(side=tk.LEFT, padx=5)
+
+        #Boton de Buscar
+        ttk.Button(frame_contenido, text="🔍 Buscar", command=self.buscar_paciente).pack(side=tk.LEFT, padx=10)
+
+        #Boton de Limpiar la busqueda
+        ttk.Button(frame_contenido, text="Limpiar", command=self.limpiar_busqueda).pack(side=tk.LEFT, padx=5)
+
+        #Label de información
+        ttk.Label(frame_contenido, text="(Buscar solo en Lista Enlazada)", font=("Arial", 8, "italic"), foreground="gray").pack(side=tk.LEFT, padx=10)
 
 
     def crear_tabla(self, parent):
@@ -565,6 +593,90 @@ class VentanaControlUsuario(tk.Toplevel):
     def salir_aplicacion(self):
         if messagebox.askokcancel("Salir", "¿Deseas salir de la aplicación?"):
             self.parent.destroy()
+
+    def buscar_paciente(self):
+        id_buscar = self.entrada_buscar_id.get().strip()
+
+        if not id_buscar:
+            messagebox.showwarning("Advertencia", "Ingresa un ID para buscar")
+            self.entrada_buscar_id.focus()
+            return
+        
+        paciente = self.gestor.buscarPaciente(id_buscar)
+
+        if paciente:
+            VentanaResultadoBusqueda(self, paciente)
+        else:
+            messagebox.showinfo("No encontrado", f"No se encontro paciente con ID: {id_buscar}")
+            self.entrada_buscar_id.focus()
+
+    def limpiar_busqueda(self):
+        self.entrada_buscar_id.delete(0, tk.END)
+        self.entrada_buscar_id.focus()
+
+#-------------------Ventana emergente para mostrar el resultado de busqeuda de la lista enlazada----
+class VentanaResultadoBusqueda(tk.Toplevel):
+    def __init__(self, parent, paciente):
+        super().__init__(parent)
+        print("Datos del paciente recibidos:", paciente)
+        self.paciente = paciente
+        self.title("Resultado de Busqueda - ID")
+        self.geometry("600x500")
+        self.configure(bg="#e8f4f8")
+        self.resizable(False,False)
+
+        self.transient(parent)
+        self.grab_set()
+
+        self.crear_interfaz()
+
+    def crear_interfaz(self):
+        frame_principal = ttk.Frame(self, padding="20")
+        frame_principal.pack(expand=True, fill=tk.BOTH)
+
+        titulo = tk.Label(frame_principal, text="PACIENTE ENCONTRADO",  font=("Arial", 16, "bold"), bg="#e8f4f8", fg="#2c5aa0")
+        titulo.pack(pady=(0,20))
+
+        separador = ttk.Separator(frame_principal, orient='horizontal')
+        separador.pack(fill=tk.X, pady=10)
+
+        #Frame para los datos
+        frame_datos = ttk.Frame(frame_principal)
+        frame_datos.pack(fill=tk.BOTH, expand=True, pady=10)
+
+        #Estilo para las etiquetas
+        style_label = {"font": ("Arial", 10, "bold"), "bg": "#e8f4f8", "fg": "#555555"}
+        style_value = {"font": ("Arial", 11), "bg": "#e8f4f8", "fg": "#2c5aa0"}
+
+        #Mostrar los datos del paciente
+        datos = [
+            ("Tipo de Documento:", self.paciente.get('tipo_id', 'N/A')),
+            ("Número de ID:", self.paciente.get('id_numero', 'N/A')),
+            ("Nombre:", self.paciente.get('nombre', 'N/A')),
+            ("Edad:", f"{self.paciente.get('edad', 'N/A')} años"),
+            ("Estrato:", self.paciente.get('estrato', 'N/A')),
+            ("Tipo de Atención:", self.paciente.get('tipo_atencion', 'N/A')),
+            ("Copago:", f"${self.paciente.get('copago', 0):,}"),
+            ("Fecha de Ingreso:", self.paciente.get('fecha_ingreso', 'N/A'))
+        ]
+
+        for i, (etiqueta, valor) in enumerate(datos):
+            frame_fila = tk.Frame(frame_datos, bg="#e8f4f8")
+            frame_fila.pack(fill=tk.X, pady=5)
+
+            #Etiqueta
+            lbl_etiqueta = tk.Label(frame_fila, text=etiqueta, **style_label, width=20, anchor='W')
+            lbl_etiqueta.pack(side=tk.LEFT, padx=(10, 5))
+
+            lbl_valor = tk.Label(frame_fila, text=valor, **style_value, anchor='W')
+            lbl_valor.pack(side=tk.LEFT, padx=5)
+
+        #Separador
+        separador2 = ttk.Separator(frame_principal, orient='horizontal')
+        separador2.pack(fill=tk.X, pady=15)
+
+        #Boton de cerrar
+        ttk.Button(frame_principal, text="Cerrar", command=self.destroy).pack(pady=10)
 
 #-----------------punto de incio-----------------------#
 if __name__ == "__main__":
