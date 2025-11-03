@@ -7,7 +7,10 @@ Esta es una aplicación de interfaz gráfica de usuario, en la que se aborda el 
 
 ## Features
 
-- Interfaz intuitiva 
+- Interfaz intuitiva
+- Formulario de Registro de paciente
+- Implementacion de tkCalendar con DateEntry
+- Botones de acción para eleminar los registros de pacientes según la Estructura de Datos 
 - Funcionabilidad de los botones 
-- Vista de la Estructura de Dato utilizada 
+- Vista de la Estructura de Datos utilizada 
 
